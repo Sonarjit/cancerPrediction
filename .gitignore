@@ -2,3 +2,9 @@
 vEnv
 training
 21.1. PersonalizedCancerDiagnosis.ipynb
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
