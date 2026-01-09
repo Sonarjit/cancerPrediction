@@ -1,6 +1,6 @@
 import PyQt6
 from PyQt6 import QtCore, QtWidgets
-from ui.single_inference_ui import SingleInferenceWidget
+from ui.toggle_ui import ToggleDisplay
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -43,13 +43,6 @@ class Ui_MainWindow(object):
         self.main_display = QtWidgets.QWidget(parent=self.centralwidget)
         self.main_display_layout = QtWidgets.QVBoxLayout(self.main_display)
 
-        # #====================================================================
-        # #===================== SINGLE inference CARD ========================
-        
-        self.single_inference_widget = SingleInferenceWidget()
-        self.main_display_layout.addWidget(self.single_inference_widget)
-        # #====================================================================
-
         self.verticalLayout.addWidget(self.main_display)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
@@ -80,6 +73,17 @@ class Ui_MainWindow(object):
             btn.setCheckable(True)
             btn.setAutoExclusive(True)
         self.single_inference.setChecked(True)  # initial active
+
+        dict_to_pass ={
+            "main_display": self.main_display,
+            "main_display_layout": self.main_display_layout,
+            "single_inference_btn": self.single_inference,
+            "batch_inference_btn": self.batch_inference,
+            "history_btn": self.inference_history,
+            "model_metadata_btn": self.model_metadata
+        }
+
+        self.toggle_display = ToggleDisplay(**dict_to_pass)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

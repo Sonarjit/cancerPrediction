@@ -40,6 +40,7 @@ class Ui_Form(object):
         self.widget_5 = QtWidgets.QWidget(parent=self.single_card)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.widget_5)
         self.pushButton_4 = QtWidgets.QPushButton(parent=self.widget_5)
+        
         self.horizontalLayout_3.addWidget(self.pushButton_4)
         self.single_card_layout.addWidget(self.widget_5)
 
@@ -75,15 +76,34 @@ class Ui_Form(object):
         self.label_4.setText(_translate("Form", "Text"))
         self.pushButton_4.setText(_translate("Form", "Predict"))
 
+    
+
 class SingleInferenceWidget(QtWidgets.QWidget, Ui_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.parent = parent
         self.setObjectName("single_inference_container")
         # setupUi expects a widget; provide self so this object becomes the UI widget
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setupUi(self)
 
         self.apply_styles()
+        self.pushButton_4.clicked.connect(self.predict)
+
+    def predict(self):
+        self.main_display = self.parent
+        self.main_display_layout = self.main_display.layout()
+        layout = self.main_display_layout
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+                w.deleteLater()
+        
+        from ui.result_single_ui import ResultSingleWidget
+        self.result_window = ResultSingleWidget(parent=self.main_display)
+        self.main_display_layout.addWidget(self.result_window)
 
     def apply_styles(self):
         self.setStyleSheet("""
