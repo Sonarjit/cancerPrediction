@@ -75,12 +75,29 @@ class Ui_Form(object):
 class ResultBatchWidget(QtWidgets.QWidget, Ui_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.parent = parent
         self.setObjectName("result_batch_container")
         # setupUi expects a widget; provide self so this object becomes the UI widget
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setupUi(self)
 
         self.apply_styles()
+        self.toolButton.clicked.connect(self.back)
+
+    def back(self):
+        self.main_display = self.parent
+        self.main_display_layout = self.main_display.layout()
+        layout = self.main_display_layout
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+                w.deleteLater()
+        from ui.batch_inference_ui import BatchInferenceWidget
+        self.single_inference_widget = BatchInferenceWidget(parent=self.main_display)
+        self.main_display_layout.addWidget(self.single_inference_widget)
+    
     def apply_styles(self):
         """
         Call this after setupUi(self).

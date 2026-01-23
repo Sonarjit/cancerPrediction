@@ -1,5 +1,6 @@
 import sys
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import  QtWidgets
+from ml.pipeline_component import VariationResponseEncoder
 from ui.mainwindow import Ui_MainWindow
 
 def main():

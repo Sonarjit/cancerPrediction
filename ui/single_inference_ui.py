@@ -1,4 +1,5 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
+from ml.prediction import prediction
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -91,6 +92,40 @@ class SingleInferenceWidget(QtWidgets.QWidget, Ui_Form):
         self.pushButton_4.clicked.connect(self.predict)
 
     def predict(self):
+        
+        gene = self.lineEdit.text().strip()
+        variation = self.lineEdit_2.text().strip()
+        text = self.plainTextEdit.toPlainText().strip()
+
+        # warning if any field is empty
+        if not gene or not variation or not text:
+            QtWidgets.QMessageBox.warning(self, "Input Error", "Please fill in all fields: Gene, Variation, and Text.")
+            return
+
+        prediction_results = prediction(gene=[gene], variation=[variation], text=[text])
+        # lists you asked for
+        predicted_class = [r["pred_class"] for r in prediction_results]
+        class1_probs = [r["prob_class_1"] for r in prediction_results]
+        class2_probs = [r["prob_class_2"] for r in prediction_results]
+        class3_probs = [r["prob_class_3"] for r in prediction_results]
+        class4_probs = [r["prob_class_4"] for r in prediction_results]
+        class5_probs = [r["prob_class_5"] for r in prediction_results]
+        class6_probs = [r["prob_class_6"] for r in prediction_results]
+        class7_probs = [r["prob_class_7"] for r in prediction_results]
+        class8_probs = [r["prob_class_8"] for r in prediction_results]
+        class9_probs = [r["prob_class_9"] for r in prediction_results]
+
+        cls_predicted = predicted_class[0]
+        prob_class_1 = class1_probs[0]
+        prob_class_2 = class2_probs[0]
+        prob_class_3 = class3_probs[0]
+        prob_class_4 = class4_probs[0]
+        prob_class_5 = class5_probs[0]
+        prob_class_6 = class6_probs[0]
+        prob_class_7 = class7_probs[0]
+        prob_class_8 = class8_probs[0]
+        prob_class_9 = class9_probs[0]
+
         self.main_display = self.parent
         self.main_display_layout = self.main_display.layout()
         layout = self.main_display_layout
@@ -103,6 +138,19 @@ class SingleInferenceWidget(QtWidgets.QWidget, Ui_Form):
         
         from ui.result_single_ui import ResultSingleWidget
         self.result_window = ResultSingleWidget(parent=self.main_display)
+        self.result_window.gene.setText(f"{gene}")
+        self.result_window.variation.setText(f"{variation}")
+        self.result_window.text.setPlainText(f"{text}")
+        self.result_window.predicted_label.setText(f"{cls_predicted}")
+        self.result_window.class1_prob.setText(f"{prob_class_1:.4f}")
+        self.result_window.class2_prob.setText(f"{prob_class_2:.4f}")
+        self.result_window.class3_prob.setText(f"{prob_class_3:.4f}")
+        self.result_window.class4_prob.setText(f"{prob_class_4:.4f}")
+        self.result_window.class5_prob.setText(f"{prob_class_5:.4f}")
+        self.result_window.class6_prob.setText(f"{prob_class_6:.4f}")
+        self.result_window.class7_prob.setText(f"{prob_class_7:.4f}")    
+        self.result_window.class8_prob.setText(f"{prob_class_8:.4f}")
+        self.result_window.class9_prob.setText(f"{prob_class_9:.4f}")
         self.main_display_layout.addWidget(self.result_window)
 
     def apply_styles(self):

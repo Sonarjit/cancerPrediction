@@ -2,9 +2,12 @@
 vEnv
 training
 21.1. PersonalizedCancerDiagnosis.ipynb
+ml/*.joblib
+
 
 # Python cache files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.joblib

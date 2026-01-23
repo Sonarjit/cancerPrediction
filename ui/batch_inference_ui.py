@@ -106,12 +106,30 @@ class Ui_Form(object):
 class BatchInferenceWidget(QtWidgets.QWidget, Ui_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.parent = parent
         self.setObjectName("batch_inference_container")
         # setupUi expects a widget; provide self so this object becomes the UI widget
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setupUi(self)
 
         self.apply_styles()
+
+        self.button_predict.clicked.connect(self.predict)
+
+    def predict(self):
+        self.main_display = self.parent
+        self.main_display_layout = self.main_display.layout()
+        layout = self.main_display_layout
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+                w.deleteLater()
+        
+        from ui.result_batch_ui import ResultBatchWidget
+        self.result_window = ResultBatchWidget(parent=self.main_display)
+        self.main_display_layout.addWidget(self.result_window)
 
     def apply_styles(self):
             self.setStyleSheet("""

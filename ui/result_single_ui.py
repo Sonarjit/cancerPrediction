@@ -284,6 +284,7 @@ class Ui_Form(object):
 
 
 class ResultSingleWidget(QtWidgets.QWidget, Ui_Form):
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
