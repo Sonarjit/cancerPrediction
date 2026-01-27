@@ -1,5 +1,5 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
-from ml.prediction import prediction
+from ml.prediction_single import prediction
 
 class Ui_Form(object):
     def setupUi(self, Form):

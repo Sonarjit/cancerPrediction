@@ -41,12 +41,12 @@ class Ui_Form(object):
         self.horizontalLayout.addWidget(self.toolButton_2)
         spacerItem = QtWidgets.QSpacerItem(405, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
-        self.comboBox = QtWidgets.QComboBox(parent=self.widget)
-        self.comboBox.setObjectName("comboBox")
-        self.horizontalLayout.addWidget(self.comboBox)
-        self.pushButton = QtWidgets.QPushButton(parent=self.widget)
-        self.pushButton.setObjectName("pushButton")
-        self.horizontalLayout.addWidget(self.pushButton)
+        # self.comboBox = QtWidgets.QComboBox(parent=self.widget)
+        # self.comboBox.setObjectName("comboBox")
+        # # self.horizontalLayout.addWidget(self.comboBox)
+        # self.pushButton = QtWidgets.QPushButton(parent=self.widget)
+        # self.pushButton.setObjectName("pushButton")
+        # # self.horizontalLayout.addWidget(self.pushButton)
         self.main_layout.addWidget(self.widget)
 
         self.line = QtWidgets.QFrame(parent=Form)
@@ -69,7 +69,7 @@ class Ui_Form(object):
         Form.setWindowTitle(_translate("Form", "Form"))
         self.toolButton.setText(_translate("Form", "..."))
         self.toolButton_2.setText(_translate("Form", "..."))
-        self.pushButton.setText(_translate("Form", "View Details"))
+        # self.pushButton.setText(_translate("Form", "View Details"))
 
 
 class ResultBatchWidget(QtWidgets.QWidget, Ui_Form):

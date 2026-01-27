@@ -51,8 +51,6 @@ def load_pipeline(path: str) -> Pipeline:
     pipeline = joblib.load(path)
     return pipeline
 
-
-
 def predict_with_pipeline(pipeline: Any, query: Any, out_csv: Optional[str] = None) -> pd.DataFrame:
     """
     Run pipeline.predict / pipeline.predict_proba on input query and return DataFrame with ID, pred_class, prob_class_1..K.
