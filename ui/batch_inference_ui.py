@@ -9,9 +9,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from ml.prediction_batch import predict_from_csv
 import pandas as pd
-from PyQt6.QtWidgets import QTableWidgetItem
-import math
-from typing import Any
+
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -205,7 +203,7 @@ class BatchInferenceWidget(QtWidgets.QWidget, Ui_Form):
         self.result_window = ResultBatchWidget(parent=self.main_display)
         self.tableWidget = self.result_window.tableWidget
         # populate the table
-        self.populate_table_from_results(df, result)
+        self.result_window.populate_table_from_results(df, result, **{"status_label": self.label_3})
 
         # # setup combo box for ID selection
         # self.combo_box = self.result_window.comboBox
@@ -343,117 +341,7 @@ class BatchInferenceWidget(QtWidgets.QWidget, Ui_Form):
         }
         """)
 
-    def populate_table_from_results(self, input_df: pd.DataFrame, result: Any):
-        """
-        Populate self.tableWidget using input_df (the CSV read earlier) and result (output of predict_from_csv).
-        input_df: DataFrame containing at least columns ID, Gene, Variation, Text (order preserved).
-        result: either "" (empty-case) or dict like {"result": { "ID": [...], "predicted_class": [...], "class1_prob": [...], ... }}
-                or directly the inner dict.
-        """
-        # Handle empty-case
-        if result == "" or result is None:
-            # Clear table and show message if you want
-            self.tableWidget.clear()
-            self.tableWidget.setRowCount(0)
-            self.tableWidget.setColumnCount(0)
-            self.label_3.setText("No predictions (empty input).")
-            self.label_3.setVisible(True)
-            return
-
-        # Normalize result dict: accept {"result": {...}} or {...}
-        if isinstance(result, dict) and "result" in result:
-            res = result["result"]
-        elif isinstance(result, dict):
-            res = result
-        else:
-            # Unexpected shape
-            self.label_3.setText("Unexpected prediction result format.")
-            self.label_3.setVisible(True)
-            return
-
-        # Build DataFrame for predictions
-        try:
-            preds_df = pd.DataFrame(res)
-        except Exception as e:
-            self.label_3.setText(f"Failed to parse prediction result: {e}")
-            self.label_3.setVisible(True)
-            return
-
-        # Ensure ID exists in input and preds
-        if "ID" not in input_df.columns or "ID" not in preds_df.columns:
-            self.label_3.setText("Missing ID column in input or prediction result.")
-            self.label_3.setVisible(True)
-            return
-
-        # Merge preserving input_df ordering
-        merged = pd.merge(input_df.reset_index(drop=True), preds_df, on="ID", how="left", suffixes=("", "_pred"))
-        merged = merged.reset_index(drop=True)  # index 0..n-1
-
-        # Prepare headers
-        headers = ["ID", "Gene", "Variation", "Text", "Predicted Class"] + [f"class{i} prob" for i in range(1, 10)]
-
-        num_rows = len(merged)
-        num_cols = len(headers)
-
-        # Reset/prepare table
-        self.tableWidget.clear()
-        self.tableWidget.setRowCount(num_rows)
-        self.tableWidget.setColumnCount(num_cols)
-        self.tableWidget.setHorizontalHeaderLabels(headers)
-
-        # Helper to pick the probability value from merged row for a given class index
-        def _get_prob_for_row(row: pd.Series, k: int):
-            # support both possible key styles: "class{k}_prob" or "prob_class_{k}"
-            candidates = [f"class{k}_prob", f"prob_class_{k}", f"class_{k}_prob"]
-            for c in candidates:
-                if c in row.index:
-                    val = row[c]
-                    # NaN protection
-                    if val is None or (isinstance(val, float) and math.isnan(val)):
-                        return ""
-                    return f"{float(val):.4f}"
-            return ""
-
-        # Fill table rows
-        for r in range(num_rows):
-            row = merged.iloc[r]
-
-            # Basic fields
-            id_val = row.get("ID", "")
-            gene_val = row.get("Gene", "")
-            var_val = row.get("Variation", "")
-            text_val = row.get("Text", "")
-
-            # Predicted class: could be missing -> show empty
-            pred_raw = row.get("predicted_class", "")
-            pred_display = "" if (pred_raw is None or (isinstance(pred_raw, float) and math.isnan(pred_raw))) else str(int(pred_raw))
-
-            # Insert columns
-            self.tableWidget.setItem(r, 0, QTableWidgetItem(str(id_val)))
-            self.tableWidget.setItem(r, 1, QTableWidgetItem(str(gene_val)))
-            self.tableWidget.setItem(r, 2, QTableWidgetItem(str(var_val)))
-
-            # Text: truncated preview with tooltip for full text if long
-            text_str = "" if (text_val is None or (isinstance(text_val, float) and math.isnan(text_val))) else str(text_val)
-            preview = (text_str[:200] + "...") if len(text_str) > 200 else text_str
-            item_text = QTableWidgetItem(preview)
-            if len(text_str) > 200:
-                item_text.setToolTip(text_str)
-            self.tableWidget.setItem(r, 3, item_text)
-
-            self.tableWidget.setItem(r, 4, QTableWidgetItem(pred_display))
-
-            # Probability columns
-            for k in range(1, 10):
-                prob_display = _get_prob_for_row(row, k)
-                self.tableWidget.setItem(r, 4 + k, QTableWidgetItem(prob_display))
-
-        # Final UI polish
-        self.tableWidget.resizeColumnsToContents()
-        self.tableWidget.resizeRowsToContents()
-        self.label_3.setVisible(False)
-
-
+    
 
 if __name__ == "__main__":
     import sys

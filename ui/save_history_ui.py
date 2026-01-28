@@ -7,6 +7,7 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
+from db_manager.db_utils import read_table
 
 
 class Ui_Form(object):
@@ -24,6 +25,11 @@ class Ui_Form(object):
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.comboBox = QtWidgets.QComboBox(parent=self.widget)
         self.comboBox.setObjectName("comboBox")
+        self.comboBox.setMinimumWidth(200)
+        # limit visible items in the dropdown
+        self.comboBox.setMaxVisibleItems(10)  # or whatever number you prefer
+        # # enforce via stylesheet if you notice the list is still too tall
+        self.comboBox.setStyleSheet("QComboBox { combobox-popup: 0; }")
         self.horizontalLayout.addWidget(self.comboBox)
         self.pushButton = QtWidgets.QPushButton(parent=self.widget)
         self.pushButton.setObjectName("pushButton")
@@ -55,9 +61,125 @@ class Ui_Form(object):
 class HistoryFormWidget(QtWidgets.QWidget, Ui_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.parent = parent
         # setupUi expects a widget; provide self so this object becomes the UI widget
         self.setupUi(self)
         self.apply_styles()
+
+        data = read_table("db_manager/database/history", "history_table")
+        # data is a dict-of-lists: ["col 1": [col 1 values...], "col 2": [col 2 values...], ...]
+        columns = ["Serial Number", "Name", "Saved on", "Single/Batch"]
+        self.populate_table(columns, list(data.values()))
+        self.pushButton.clicked.connect(self.on_view_button_clicked)
+
+    def populate_table(self, columns, data):
+        """
+        Populate the table with given columns and data.
+        :param columns: List of column names.
+        :param data: a list-of-lists: [[col 1 values...], [col 2 values...], ...]
+        """
+        self.tableWidget.clear()
+        self.tableWidget.setColumnCount(len(columns))
+        self.tableWidget.setRowCount(len(data[0]) + 1)
+        self.tableWidget.setHorizontalHeaderLabels(columns)
+
+        for col_idx, column in enumerate(columns):
+            self.tableWidget.setColumnWidth(col_idx, 200)
+
+        serial_numbers = [str(i + 1) for i in range(len(data[0]))]
+        for row_idx, serial_number in enumerate(serial_numbers):
+            item = QtWidgets.QTableWidgetItem(serial_number)
+            self.tableWidget.setItem(row_idx, 0, item)
+        names = data[0]
+        for row_idx, name in enumerate(names):
+            item = QtWidgets.QTableWidgetItem(name)
+            self.tableWidget.setItem(row_idx, 1, item)
+        saved_ons = data[1]
+        for row_idx, saved_on in enumerate(saved_ons):
+            item = QtWidgets.QTableWidgetItem(saved_on)
+            self.tableWidget.setItem(row_idx, 2, item)
+        types = data[2]
+        for row_idx, type_ in enumerate(types):
+            item = QtWidgets.QTableWidgetItem(type_)
+            self.tableWidget.setItem(row_idx, 3, item)
+
+        # also update the combo box values with serial number
+        self.comboBox.clear()
+        combo_box_values = serial_numbers
+        self.comboBox.addItems(combo_box_values)
+
+    def on_view_button_clicked(self):
+        """
+        Handle the View button click event.
+        """
+        selected_index = int(self.comboBox.currentIndex())
+        # get the table values in that row
+        value_list = []
+        for col in range(self.tableWidget.columnCount()):
+            item = self.tableWidget.item(selected_index, col).text()
+            value_list.append(item if item else "")
+
+        name = value_list[1]
+        type_ = value_list[3]
+        
+        if type_ == "Single":
+            from ui.result_single_ui import ResultSingleWidget
+            from db_manager.db_utils import get_a_row
+            data = get_a_row("db_manager/database/single_inference", "single_inference_table", "Name", name)
+            gene = data['Gene']
+            variation = data['Variation']
+            text = data['Text']
+            predicted_class = data['Predicted_Class']
+            class1_prob = data['Class_1_probability']
+            class2_prob = data['Class_2_probability']
+            class3_prob = data['Class_3_probability']
+            class4_prob = data['Class_4_probability']
+            class5_prob = data['Class_5_probability']
+            class6_prob = data['Class_6_probability']
+            class7_prob = data['Class_7_probability']
+            class8_prob = data['Class_8_probability']
+            class9_prob = data['Class_9_probability']
+            dict_to_pass = {
+            "gene": gene,
+            "variation": variation,
+            "text": text,
+            "predicted_class": predicted_class,
+            "class1_prob": class1_prob,
+            "class2_prob": class2_prob,
+            "class3_prob": class3_prob,
+            "class4_prob": class4_prob,
+            "class5_prob": class5_prob,
+            "class6_prob": class6_prob,
+            "class7_prob": class7_prob,
+            "class8_prob": class8_prob,
+            "class9_prob": class9_prob,
+        }
+            result_widget = ResultSingleWidget(parent=self.parent)
+            result_widget.populate_data(**dict_to_pass)
+            
+        else:  # Batch
+            from ui.result_batch_ui import ResultBatchWidget
+            from ui.batch_view_data_splitter import split_data_for_table
+            result_widget = ResultBatchWidget(parent=self.parent)
+            data = read_table("db_manager/database/batch_inference", name)
+            input_df, result = split_data_for_table(data)
+            result_widget.populate_table_from_results(input_df, result)
+
+        # disable back and save buttons
+        result_widget.toolButton.setEnabled(False)
+        result_widget.toolButton_2.setEnabled(False)
+
+        self.main_display = self.parent
+        self.main_display_layout = self.main_display.layout()
+        layout = self.main_display_layout
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+                w.deleteLater()
+
+        self.main_display_layout.addWidget(result_widget)
 
     def apply_styles(self):
         """

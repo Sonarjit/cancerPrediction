@@ -297,6 +297,7 @@ class ResultSingleWidget(QtWidgets.QWidget, Ui_Form):
         self.apply_shadows()
 
         self.toolButton.clicked.connect(self.back)
+        self.toolButton_2.clicked.connect(self.save)
 
     def back(self):
         self.main_display = self.parent
@@ -311,7 +312,100 @@ class ResultSingleWidget(QtWidgets.QWidget, Ui_Form):
         from ui.single_inference_ui import SingleInferenceWidget
         self.single_inference_widget = SingleInferenceWidget(parent=self.main_display)
         self.main_display_layout.addWidget(self.single_inference_widget)
+    
+    def save(self):
+        from db_manager.db_utils import insert_row
+
+        # ask user for name to save under
+        name, ok = QtWidgets.QInputDialog.getText(self, "Save Result", "Enter a name to save this result under:")
+        if not ok or not name.strip():
+            return  # user cancelled or entered empty name
+
+        # get all the values
+        gene = self.gene.text()
+        variation = self.variation.text()
+        text = self.text.toPlainText()
+        predicted_class = int(self.predicted_label.text())
+        class1_prob = float(self.class1_prob.text())
+        class2_prob = float(self.class2_prob.text())
+        class3_prob = float(self.class3_prob.text())
+        class4_prob = float(self.class4_prob.text())
+        class5_prob = float(self.class5_prob.text())
+        class6_prob = float(self.class6_prob.text())
+        class7_prob = float(self.class7_prob.text())
+        class8_prob = float(self.class8_prob.text())
+        class9_prob = float(self.class9_prob.text())
         
+        data_to_insert = {
+            "Name": name,
+            "Gene": gene,
+            "Variation": variation,
+            "Text": text,
+            "Predicted Class": predicted_class,
+            "Class 1 probability": class1_prob,
+            "Class 2 probability": class2_prob,
+            "Class 3 probability": class3_prob,
+            "Class 4 probability": class4_prob,
+            "Class 5 probability": class5_prob,
+            "Class 6 probability": class6_prob,
+            "Class 7 probability": class7_prob,
+            "Class 8 probability": class8_prob,
+            "Class 9 probability": class9_prob
+        }
+
+        # update single inference table in database
+        is_inserted, msg = insert_row("db_manager/database/single_inference", "single_inference_table", data_to_insert)
+        if not is_inserted:
+            QtWidgets.QMessageBox.warning(self, "Error", f"Failed to save result: {msg}")
+            return
+        
+        # update history table in database
+        from datetime import datetime
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        history_data = {
+            "Name": name,
+            "Saved on": now,
+            "Single/Batch": "Single"
+        }
+        is_inserted, msg = insert_row("db_manager/database/history", "history_table", history_data)
+        if not is_inserted:
+            QtWidgets.QMessageBox.warning(self, "Error", f"Failed to save result: {msg}")
+            return
+
+        # inform user of success
+    
+        QtWidgets.QMessageBox.information(self, "Success", f"Result saved successfully under the name '{name}'.")
+
+    def populate_data(self, **kwargs):
+        gene = kwargs.get("gene", "")
+        variation = kwargs.get("variation", "")
+        text = kwargs.get("text", "")
+        cls_predicted = kwargs.get("predicted_class", "")
+        prob_class_1 = kwargs.get("class1_prob", 0.0)
+        prob_class_2 = kwargs.get("class2_prob", 0.0)
+        prob_class_3 = kwargs.get("class3_prob", 0.0)
+        prob_class_4 = kwargs.get("class4_prob", 0.0)
+        prob_class_5 = kwargs.get("class5_prob", 0.0)
+        prob_class_6 = kwargs.get("class6_prob", 0.0)
+        prob_class_7 = kwargs.get("class7_prob", 0.0)    
+        prob_class_8 = kwargs.get("class8_prob", 0.0)
+        prob_class_9 = kwargs.get("class9_prob", 0.0)
+
+        self.gene.setText(f"{gene}")
+        self.variation.setText(f"{variation}")
+        self.text.setPlainText(f"{text}")
+        self.predicted_label.setText(f"{cls_predicted}")
+        self.class1_prob.setText(f"{prob_class_1:.4f}")
+        self.class2_prob.setText(f"{prob_class_2:.4f}")
+        self.class3_prob.setText(f"{prob_class_3:.4f}")
+        self.class4_prob.setText(f"{prob_class_4:.4f}")
+        self.class5_prob.setText(f"{prob_class_5:.4f}")
+        self.class6_prob.setText(f"{prob_class_6:.4f}")
+        self.class7_prob.setText(f"{prob_class_7:.4f}")    
+        self.class8_prob.setText(f"{prob_class_8:.4f}")
+        self.class9_prob.setText(f"{prob_class_9:.4f}")
+        
+
     def apply_styles(self):
         self.setStyleSheet("""
     /* =========================
@@ -541,6 +635,8 @@ class ResultSingleWidget(QtWidgets.QWidget, Ui_Form):
 
         make_shadow(self.card, blur=22, y=8, alpha=28)
         # make_shadow(self.scrollAreaWidgetContents, blur=18, y=6, alpha=20)
+
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)

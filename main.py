@@ -2,8 +2,13 @@ import sys
 from PyQt6 import  QtWidgets
 from ml.pipeline_component import VariationResponseEncoder
 from ui.mainwindow import Ui_MainWindow
+from db_manager.create_app_table import create_history_table, create_single_inference_table
 
+def create_app_databases():
+    create_history_table()
+    create_single_inference_table()
 def main():
+    create_app_databases()
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()

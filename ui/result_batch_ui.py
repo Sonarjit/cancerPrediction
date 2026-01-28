@@ -7,6 +7,13 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtWidgets import QMessageBox, QInputDialog
+from PyQt6.QtWidgets import QTableWidgetItem
+import math
+from typing import Any
+import pandas as pd
+from db_manager.db_utils import create_table, update_table, insert_row, table_exists
+from db_manager.table_columns import TABLE_COLUMNS
 
 
 class Ui_Form(object):
@@ -83,6 +90,7 @@ class ResultBatchWidget(QtWidgets.QWidget, Ui_Form):
 
         self.apply_styles()
         self.toolButton.clicked.connect(self.back)
+        self.toolButton_2.clicked.connect(self.save)
 
     def back(self):
         self.main_display = self.parent
@@ -97,7 +105,205 @@ class ResultBatchWidget(QtWidgets.QWidget, Ui_Form):
         from ui.batch_inference_ui import BatchInferenceWidget
         self.single_inference_widget = BatchInferenceWidget(parent=self.main_display)
         self.main_display_layout.addWidget(self.single_inference_widget)
-    
+
+    def save(self):
+        # ask user for name to save under
+        name, ok = self.ask_for_name_light()
+        if not ok:
+            return  # user cancelled or entered empty name
+        
+        columns = TABLE_COLUMNS["batch_inference_table"]
+        id_list = []
+        gene_list = []
+        variation_list = []
+        text_list = []
+        predicted_class_list = []
+        class_1_prob_list = []  
+        class_2_prob_list = []
+        class_3_prob_list = []
+        class_4_prob_list = []
+        class_5_prob_list = []  
+        class_6_prob_list = []
+        class_7_prob_list = []
+        class_8_prob_list = []
+        class_9_prob_list = []
+
+        for i in range(self.tableWidget.rowCount()):
+            id_list.append(self.tableWidget.item(i, 0).text())
+            gene_list.append(self.tableWidget.item(i, 1).text())
+            variation_list.append(self.tableWidget.item(i, 2).text())
+            text_list.append(self.tableWidget.item(i, 3).text())
+            predicted_class_list.append(self.tableWidget.item(i, 4).text())
+            class_1_prob_list.append(self.tableWidget.item(i, 5).text())
+            class_2_prob_list.append(self.tableWidget.item(i, 6).text())
+            class_3_prob_list.append(self.tableWidget.item(i, 7).text())
+            class_4_prob_list.append(self.tableWidget.item(i, 8).text())
+            class_5_prob_list.append(self.tableWidget.item(i, 9).text())
+            class_6_prob_list.append(self.tableWidget.item(i, 10).text())
+            class_7_prob_list.append(self.tableWidget.item(i, 11).text())
+            class_8_prob_list.append(self.tableWidget.item(i, 12).text())
+            class_9_prob_list.append(self.tableWidget.item(i, 13).text())
+
+        data_to_update = {
+            "ID": id_list,
+            "Gene": gene_list,
+            "Variation": variation_list,
+            "Text": text_list,
+            "Predicted Class": predicted_class_list,
+            "Class 1 probability": class_1_prob_list,
+            "Class 2 probability": class_2_prob_list,
+            "Class 3 probability": class_3_prob_list,
+            "Class 4 probability": class_4_prob_list,
+            "Class 5 probability": class_5_prob_list,
+            "Class 6 probability": class_6_prob_list,
+            "Class 7 probability": class_7_prob_list,
+            "Class 8 probability": class_8_prob_list,
+            "Class 9 probability": class_9_prob_list,
+        }
+        
+        # check if table already exists
+        # keep prompting until user provides a non-conflicting name or cancels
+        while table_exists("db_manager/database/batch_inference", name):
+            # inform user and ask again
+            self.show_light_message("Name already used",
+                            f"A result with the name '{name}' already exists.\nPlease save with another name.")
+            name, ok = self.ask_for_name_light()
+            if not ok or not name.strip():
+                return  # user cancelled or entered empty name
+
+        # create table if not exists
+        create_table("db_manager/database/batch_inference", f"{name}", columns)
+        # update table
+        update_table("db_manager/database/batch_inference", f"{name}", data_to_update)
+         # update history table
+        history_data = {
+            "Name": name,
+            "Saved on": QtCore.QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss"),
+            "Single/Batch": "Batch",
+        }
+        is_inserted, mgs = insert_row("db_manager/database/history", "history_table", history_data)
+
+        self.show_light_message("Save Successful",
+                       f"Results saved successfully under the name '{name}'.",
+                       icon=QMessageBox.Icon.Information)
+
+            
+    def populate_table_from_results(self, input_df: pd.DataFrame, result: Any, **kwargs):
+        """
+        Populate self.tableWidget using input_df (the CSV read earlier) and result (output of predict_from_csv).
+        input_df: DataFrame containing at least columns ID, Gene, Variation, Text (order preserved).
+        result: either "" (empty-case) or dict like {"result": { "ID": [...], "predicted_class": [...], "class1_prob": [...], ... }}
+                or directly the inner dict.
+        """
+        self.label_3 = kwargs.get("status_label", None)
+        if self.label_3 is None:
+            # create a temporary label if not provided
+            self.label_3 = QtWidgets.QLabel()
+            self.label_3.setObjectName("label_3")
+            
+        # Handle empty-case
+        if result == "" or result is None:
+            # Clear table and show message if you want
+            self.tableWidget.clear()
+            self.tableWidget.setRowCount(0)
+            self.tableWidget.setColumnCount(0)
+            self.label_3.setText("No predictions (empty input).")
+            self.label_3.setVisible(True)
+            return
+
+        # Normalize result dict: accept {"result": {...}} or {...}
+        if isinstance(result, dict) and "result" in result:
+            res = result["result"]
+        elif isinstance(result, dict):
+            res = result
+        else:
+            # Unexpected shape
+            self.label_3.setText("Unexpected prediction result format.")
+            self.label_3.setVisible(True)
+            return
+
+        # Build DataFrame for predictions
+        try:
+            preds_df = pd.DataFrame(res)
+        except Exception as e:
+            self.label_3.setText(f"Failed to parse prediction result: {e}")
+            self.label_3.setVisible(True)
+            return
+
+        # Ensure ID exists in input and preds
+        if "ID" not in input_df.columns or "ID" not in preds_df.columns:
+            self.label_3.setText("Missing ID column in input or prediction result.")
+            self.label_3.setVisible(True)
+            return
+
+        # Merge preserving input_df ordering
+        merged = pd.merge(input_df.reset_index(drop=True), preds_df, on="ID", how="left", suffixes=("", "_pred"))
+        merged = merged.reset_index(drop=True)  # index 0..n-1
+
+        # Prepare headers
+        headers = ["ID", "Gene", "Variation", "Text", "Predicted Class"] + [f"class {i} prob" for i in range(1, 10)]
+
+        num_rows = len(merged)
+        num_cols = len(headers)
+
+        # Reset/prepare table
+        self.tableWidget.clear()
+        self.tableWidget.setRowCount(num_rows)
+        self.tableWidget.setColumnCount(num_cols)
+        self.tableWidget.setHorizontalHeaderLabels(headers)
+
+        # Helper to pick the probability value from merged row for a given class index
+        def _get_prob_for_row(row: pd.Series, k: int):
+            # support both possible key styles: "class{k}_prob" or "prob_class_{k}"
+            candidates = [f"class{k}_prob", f"prob_class_{k}", f"class_{k}_prob"]
+            for c in candidates:
+                if c in row.index:
+                    val = row[c]
+                    # NaN protection
+                    if val is None or (isinstance(val, float) and math.isnan(val)):
+                        return ""
+                    return f"{float(val):.4f}"
+            return ""
+
+        # Fill table rows
+        for r in range(num_rows):
+            row = merged.iloc[r]
+
+            # Basic fields
+            id_val = row.get("ID", "")
+            gene_val = row.get("Gene", "")
+            var_val = row.get("Variation", "")
+            text_val = row.get("Text", "")
+
+            # Predicted class: could be missing -> show empty
+            pred_raw = row.get("predicted_class", "")
+            pred_display = "" if (pred_raw is None or (isinstance(pred_raw, float) and math.isnan(pred_raw))) else str(int(pred_raw))
+
+            # Insert columns
+            self.tableWidget.setItem(r, 0, QTableWidgetItem(str(id_val)))
+            self.tableWidget.setItem(r, 1, QTableWidgetItem(str(gene_val)))
+            self.tableWidget.setItem(r, 2, QTableWidgetItem(str(var_val)))
+
+            # Text: truncated preview with tooltip for full text if long
+            text_str = "" if (text_val is None or (isinstance(text_val, float) and math.isnan(text_val))) else str(text_val)
+            preview = (text_str[:200] + "...") if len(text_str) > 200 else text_str
+            item_text = QTableWidgetItem(preview)
+            if len(text_str) > 200:
+                item_text.setToolTip(text_str)
+            self.tableWidget.setItem(r, 3, item_text)
+
+            self.tableWidget.setItem(r, 4, QTableWidgetItem(pred_display))
+
+            # Probability columns
+            for k in range(1, 10):
+                prob_display = _get_prob_for_row(row, k)
+                self.tableWidget.setItem(r, 4 + k, QTableWidgetItem(prob_display))
+
+        # Final UI polish
+        self.tableWidget.resizeColumnsToContents()
+        self.tableWidget.resizeRowsToContents()
+        self.label_3.setVisible(False)
+
     def apply_styles(self):
         """
         Call this after setupUi(self).
@@ -241,6 +447,56 @@ class ResultBatchWidget(QtWidgets.QWidget, Ui_Form):
 
     """)
 
+    def show_light_message(self, title: str, text: str, icon=QMessageBox.Icon.Information):
+        mb = QMessageBox(self)                        # parented to your widget
+        mb.setIcon(icon)
+        mb.setWindowTitle(title)
+        mb.setText(text)
+        mb.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+        # Force light theme for this dialog only
+        mb.setStyleSheet("""
+            QMessageBox {
+                background-color: #ffffff;
+                color: #0f172a;         /* dark text */
+                font-size: 13px;
+            }
+            QMessageBox QLabel {
+                color: #0f172a;
+            }
+            QPushButton {
+                background-color: #f3f4f6;
+                color: #0f172a;
+                border: 1px solid #d1d5db;
+                padding: 6px 12px;
+                border-radius: 6px;
+                min-width: 80px;
+            }
+            QPushButton:hover {
+                background-color: #e6e7ea;
+            }
+        """)
+        mb.exec()
+
+    def ask_for_name_light(self, title="Save Result", label="Enter a name to save this result under:"):
+        dlg = QInputDialog(self)
+        dlg.setWindowTitle(title)
+        dlg.setLabelText(label)
+        dlg.setTextValue("")  # initial value
+
+        # Apply a local light stylesheet so text is visible on dark-themed apps
+        dlg.setStyleSheet("""
+            QInputDialog { background-color: #ffffff; color: #0f172a; }
+            QInputDialog QLabel { color: #0f172a; font-size: 13px; }
+            QLineEdit { background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; padding: 6px; }
+            QPushButton { background-color: #f3f4f6; color: #0f172a; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 6px; }
+            QPushButton:hover { background-color: #e6e7ea; }
+        """)
+
+        accepted = dlg.exec() == QtWidgets.QDialog.DialogCode.Accepted
+        if accepted:
+            return dlg.textValue(), True
+        return "", False
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)

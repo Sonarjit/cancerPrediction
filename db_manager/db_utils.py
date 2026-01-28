@@ -142,23 +142,14 @@ def create_table(db_name: str, table_name: str, columns: List[Tuple[str, str]]) 
 
 def update_table(db_name: str, table_name: str, values: Dict[str, list]) -> int:
     """
-    Update rows in table using primary key.
+    Upsert rows in table using primary key.
 
-    values: dict of lists
-      {
-        "ID": ["r1", "r2"],
-        "Gene": ["TP53", "BRCA1"],
-        "Variation": ["Mut", "Other"]
-      }
-
-    Rules:
-    - All lists must have the same length
-    - Primary key column must be present
-    - Each index updates one row
-    - Only existing primary-key rows are updated
+    For each index i in the provided lists:
+      - if a row with primary-key == values[pk][i] exists, UPDATE it (only columns provided)
+      - otherwise INSERT a new row with the provided columns
 
     Returns:
-      Number of rows updated
+      Number of rows inserted or updated (total).
     """
     if not isinstance(values, dict) or not values:
         raise ValueError("values must be a non-empty dict of lists")
@@ -181,45 +172,81 @@ def update_table(db_name: str, table_name: str, values: Dict[str, list]) -> int:
         pk_cols = [c[0] for c in cols_info if c[2] == 1]
         pk_col = pk_cols[0] if pk_cols else table_cols[0]
 
-        # Sanitize input keys
+        # Map user-supplied keys (original or unsanitized) -> sanitized table column names
         input_keys = list(values.keys())
-        sanitized_keys = sanitize_column_name(input_keys)
-        key_map = dict(zip(sanitized_keys, input_keys))
+        sanitized_input_keys = sanitize_column_name(input_keys)
+        # input_map: sanitized_key -> original user key
+        input_map = {s: k for s, k in zip(sanitized_input_keys, input_keys)}
 
-        if pk_col not in sanitized_keys:
+        # Ensure primary key is provided by the caller (after sanitization matching)
+        if pk_col not in input_map:
             raise ValueError(f"Primary key column '{pk_col}' must be included in values")
 
-        updated_count = 0
+        total_changed = 0
 
         for i in range(num_rows):
-            set_clauses = []
-            params = []
+            # Determine primary key value for this row
+            pk_value = values[input_map[pk_col]][i]
 
-            for sanitized_col, orig_col in key_map.items():
-                if sanitized_col == pk_col:
+            # Check existence
+            cur = conn.execute(
+                f"SELECT 1 FROM {_quote_identifier(table_name)} WHERE {_quote_identifier(pk_col)} = ? LIMIT 1;",
+                (pk_value,)
+            )
+            exists = cur.fetchone() is not None
+
+            if exists:
+                # Build UPDATE: only for table columns present in input_map and not the pk
+                set_clauses = []
+                params = []
+                for tbl_col in table_cols:
+                    if tbl_col == pk_col:
+                        continue
+                    if tbl_col in input_map:
+                        orig_key = input_map[tbl_col]
+                        set_clauses.append(f"{_quote_identifier(tbl_col)} = ?")
+                        params.append(values[orig_key][i])
+
+                if not set_clauses:
+                    # nothing provided to update for this row
                     continue
-                if sanitized_col in table_cols:
-                    set_clauses.append(f"{_quote_identifier(sanitized_col)} = ?")
-                    params.append(values[orig_col][i])
 
-            if not set_clauses:
-                continue  # nothing to update
+                sql = f"""
+                    UPDATE {_quote_identifier(table_name)}
+                    SET {', '.join(set_clauses)}
+                    WHERE {_quote_identifier(pk_col)} = ?;
+                """
+                cur = conn.execute(sql, (*params, pk_value))
+                # sqlite3's rowcount reports number of rows modified by the statement
+                total_changed += cur.rowcount if cur.rowcount is not None else 0
 
-            pk_value = values[key_map[pk_col]][i]
+            else:
+                # Build INSERT: include all table columns that the caller provided
+                insert_cols = []
+                insert_vals = []
+                for tbl_col in table_cols:
+                    if tbl_col in input_map:
+                        orig_key = input_map[tbl_col]
+                        insert_cols.append(_quote_identifier(tbl_col))
+                        insert_vals.append(values[orig_key][i])
 
-            sql = f"""
-                UPDATE {_quote_identifier(table_name)}
-                SET {', '.join(set_clauses)}
-                WHERE {_quote_identifier(pk_col)} = ?;
-            """
-            cur = conn.execute(sql, (*params, pk_value))
-            updated_count += cur.rowcount
+                # Primary key must be in insert_cols (we already validated that earlier)
+                if not insert_cols:
+                    # No columns to insert (shouldn't happen because pk must be present)
+                    continue
+
+                placeholders = ", ".join(["?"] * len(insert_vals))
+                cols_sql = ", ".join(insert_cols)
+                sql = f"INSERT INTO {_quote_identifier(table_name)} ({cols_sql}) VALUES ({placeholders});"
+                conn.execute(sql, tuple(insert_vals))
+                total_changed += 1
 
         conn.commit()
-        return updated_count
+        return total_changed
 
     finally:
         conn.close()
+
 
 def insert_row(db_name: str, table_name: str, values: Dict[str, Any]) -> bool:
     """
@@ -291,7 +318,8 @@ def insert_row(db_name: str, table_name: str, values: Dict[str, Any]) -> bool:
         )
         if cur.fetchone() is not None:
             # duplicate
-            return False
+            mgs = f"Duplicate primary key value '{pk_value}' found in table '{table_name}'"
+            return False, mgs
 
         # Build insert
         cols_sql = ", ".join([_quote_identifier(c) for c in final_cols])
@@ -299,14 +327,15 @@ def insert_row(db_name: str, table_name: str, values: Dict[str, Any]) -> bool:
         sql = f"INSERT INTO {_quote_identifier(table_name)} ({cols_sql}) VALUES ({placeholders});"
         conn.execute(sql, tuple(final_vals))
         conn.commit()
-        return True
+        mgs = f"Row inserted into table '{table_name}'"
+        return True, mgs
     finally:
         conn.close()
 
 
 def read_table(db_name: str, table_name: str) -> Dict[str, List[Any]]:
     """
-    Read an entire table and return a dict-of-lists: {col_name: [values...], ...}
+    Read an entire table and return  a dict-of-lists: ["col 1": [col 1 values...], "col 2": [col 2 values...], ...]
     """
     conn = _open_conn(db_name)
     try:
@@ -361,6 +390,46 @@ def remove_row(db_name: str, table_name: str, primary_col: str, value: Any) -> b
     finally:
         conn.close()
 
+def table_exists(db_name: str, table_name: str) -> bool:
+    """
+    Return True if `table_name` exists in the database `db_name`, False otherwise.
+
+    Parameters:
+      - db_name: database name WITHOUT .db ('.db' will be appended automatically)
+      - table_name: name of the table to check
+
+    Notes:
+      - Uses sqlite_master lookup first for an exact match, and falls back to a
+        sanitized-name check if the original name doesn't match (to handle cases
+        where callers might pass sanitized vs original names).
+    """
+    if not table_name or not isinstance(table_name, str):
+        raise ValueError("table_name must be a non-empty string")
+
+    conn = _open_conn(db_name)
+    try:
+        # First try an exact match against sqlite_master (works for normal table names,
+        # including those with spaces or special characters).
+        cur = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = ? LIMIT 1;",
+            (table_name,)
+        )
+        if cur.fetchone() is not None:
+            return True
+
+        # Fallback: try sanitized variant (in case the table was created using a sanitized name)
+        sanitized_name = sanitize_column_name([table_name])[0]
+        if sanitized_name != table_name:
+            cur = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name = ? LIMIT 1;",
+                (sanitized_name,)
+            )
+            if cur.fetchone() is not None:
+                return True
+
+        return False
+    finally:
+        conn.close()
 
 # ---------------------
 # If run as script, quick demo

@@ -126,6 +126,22 @@ class SingleInferenceWidget(QtWidgets.QWidget, Ui_Form):
         prob_class_8 = class8_probs[0]
         prob_class_9 = class9_probs[0]
 
+        dict_to_pass = {
+            "gene": gene,
+            "variation": variation,
+            "text": text,
+            "predicted_class": cls_predicted,
+            "class1_prob": prob_class_1,
+            "class2_prob": prob_class_2,
+            "class3_prob": prob_class_3,
+            "class4_prob": prob_class_4,
+            "class5_prob": prob_class_5,
+            "class6_prob": prob_class_6,
+            "class7_prob": prob_class_7,
+            "class8_prob": prob_class_8,
+            "class9_prob": prob_class_9,
+        }
+
         self.main_display = self.parent
         self.main_display_layout = self.main_display.layout()
         layout = self.main_display_layout
@@ -137,21 +153,10 @@ class SingleInferenceWidget(QtWidgets.QWidget, Ui_Form):
                 w.deleteLater()
         
         from ui.result_single_ui import ResultSingleWidget
-        self.result_window = ResultSingleWidget(parent=self.main_display)
-        self.result_window.gene.setText(f"{gene}")
-        self.result_window.variation.setText(f"{variation}")
-        self.result_window.text.setPlainText(f"{text}")
-        self.result_window.predicted_label.setText(f"{cls_predicted}")
-        self.result_window.class1_prob.setText(f"{prob_class_1:.4f}")
-        self.result_window.class2_prob.setText(f"{prob_class_2:.4f}")
-        self.result_window.class3_prob.setText(f"{prob_class_3:.4f}")
-        self.result_window.class4_prob.setText(f"{prob_class_4:.4f}")
-        self.result_window.class5_prob.setText(f"{prob_class_5:.4f}")
-        self.result_window.class6_prob.setText(f"{prob_class_6:.4f}")
-        self.result_window.class7_prob.setText(f"{prob_class_7:.4f}")    
-        self.result_window.class8_prob.setText(f"{prob_class_8:.4f}")
-        self.result_window.class9_prob.setText(f"{prob_class_9:.4f}")
+        self.result_window = ResultSingleWidget(parent=self.main_display)    
+        self.result_window.populate_data(**dict_to_pass)
         self.main_display_layout.addWidget(self.result_window)
+        
 
     def apply_styles(self):
         self.setStyleSheet("""
