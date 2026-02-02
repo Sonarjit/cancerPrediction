@@ -137,7 +137,7 @@ source venv/bin/activate
 
 [Download the ML pipeline here](https://drive.google.com/drive/folders/1704nivMjXE_rAI8pPmuecO2Z64SsT2g_?usp=sharing)
 
-
+* Then cut and paste the pipeline.joblib in ml/
 
 **Install dependencies**
 
@@ -145,7 +145,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-* Then cut and paste the pipeline.joblib in ml/
 
 **Run the application**
 
