@@ -1,6 +1,6 @@
 *.zip
 vEnv
-training
+training_data
 21.1. PersonalizedCancerDiagnosis.ipynb
 ml/*.joblib
 
