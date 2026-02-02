@@ -16,7 +16,6 @@
 * [Performance comparison](#performance-comparison)
 * [Getting started](#getting-started)
 * [Operating the software (UI)](#operating-the-software-ui)
-* [Demo](#demo)
 * [Future plans](#future-plans)
 
 ---
@@ -153,17 +152,23 @@ python main.py
 ## Operating the software (UI)
 
 1. **Single inference UI**
+
 ![Single inference UI — enter Gene, Variation and Text](docs/images/singleInference.png)
+
    * Provide `Gene`, `Variation`, and `Text`.
    * Click **Predict** to see the predicted class and model probabilities.
    * Click **Save** to persist the inference to the app database.
 
 2. **Single inference result view**
-[![Single inference Result UI (click to expand)](docs/images/single_inference_ui_thumb.png)](docs/images/result_singleInference.png)
+
+![Single inference Result UI](docs/images/result_singleInference.png)
+
    * Shows class, probability scores, and the raw input text.
    * Save / Export button to record the inference.
 
 3. **Batch inference UI**
+
+![Batch inference UI](docs/images/batchInference.png)
 
    * Upload a CSV with the required columns.
    * Map columns if header names differ.
@@ -171,16 +176,16 @@ python main.py
 
 4. **Batch results view**
 
+![Batch inference Result UI](docs/images/result_batchInference.png)
+
    * Paginated result table with per‑row details and save/export options.
 
 5. **Saved results**
 
+![Saved Results UI](docs/images/savedResults.png)
+
    * Browse previously saved runs and inspect full evidence + model output.
 
-## Demo
-
-* Demo video: `[VIDEO LINK HERE]`
-* Consider adding a short GIF for day‑to‑day operations in `docs/`.
 
 ## Future plans
 
