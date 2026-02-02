@@ -153,13 +153,13 @@ python main.py
 ## Operating the software (UI)
 
 1. **Single inference UI**
-![Single inference UI — enter Gene, Variation and Text](docs/images/singleInference_ui.png)
+![Single inference UI — enter Gene, Variation and Text](docs/images/singleInference.png)
    * Provide `Gene`, `Variation`, and `Text`.
    * Click **Predict** to see the predicted class and model probabilities.
    * Click **Save** to persist the inference to the app database.
 
 2. **Single inference result view**
-
+[![Single inference Result UI (click to expand)](docs/images/single_inference_ui_thumb.png)](docs/images/result_singleInference.png)
    * Shows class, probability scores, and the raw input text.
    * Save / Export button to record the inference.
 
