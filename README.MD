@@ -111,7 +111,7 @@ The logistic regression model provides the best log‑loss and misclassification
 **Clone the repository**
 
 ```bash
-git clone <https://github.com/Sonarjit/cancerPrediction.git>
+git clone https://github.com/Sonarjit/cancerPrediction.git
 cd <repo-folder>
 ```
 
@@ -134,9 +134,9 @@ source venv/bin/activate
 
 **Download ML Pipeline**
 
-```bash
-<[Download the ML pipeline here](https://drive.google.com/drive/folders/1704nivMjXE_rAI8pPmuecO2Z64SsT2g_?usp=sharing)>
-```
+
+[Download the ML pipeline here](https://drive.google.com/drive/folders/1704nivMjXE_rAI8pPmuecO2Z64SsT2g_?usp=sharing)
+
 
 
 **Install dependencies**
