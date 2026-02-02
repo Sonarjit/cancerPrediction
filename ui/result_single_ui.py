@@ -247,12 +247,14 @@ class Ui_Form(object):
         self.gridLayout_2.addWidget(self.widget_11, 2, 2, 1, 1)
 
         self.verticalLayout_3.addWidget(self.widget_3)
-        self.label_16 = QtWidgets.QLabel(parent=self.scrollAreaWidgetContents)
-        self.label_16.setObjectName("label_16")
-        self.verticalLayout_3.addWidget(self.label_16)
-        self.plainTextEdit_2 = QtWidgets.QPlainTextEdit(parent=self.scrollAreaWidgetContents)
-        self.plainTextEdit_2.setObjectName("plainTextEdit_2")
-        self.verticalLayout_3.addWidget(self.plainTextEdit_2)
+
+        # self.label_16 = QtWidgets.QLabel(parent=self.scrollAreaWidgetContents)
+        # self.label_16.setObjectName("label_16")
+        # self.verticalLayout_3.addWidget(self.label_16)
+        # self.plainTextEdit_2 = QtWidgets.QPlainTextEdit(parent=self.scrollAreaWidgetContents)
+        # self.plainTextEdit_2.setObjectName("plainTextEdit_2")
+        # self.verticalLayout_3.addWidget(self.plainTextEdit_2)
+
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.horizontalLayout_11.addWidget(self.scrollArea)
         self.card_layout.addWidget(self.scroll_container)
@@ -280,7 +282,7 @@ class Ui_Form(object):
         self.label_15.setText(_translate("Form", "Class 7:"))
         self.label_13.setText(_translate("Form", "Class 8:"))
         self.label_14.setText(_translate("Form", "Class 9:"))
-        self.label_16.setText(_translate("Form", "Interpretation:"))
+        # self.label_16.setText(_translate("Form", "Interpretation:"))
 
 
 class ResultSingleWidget(QtWidgets.QWidget, Ui_Form):

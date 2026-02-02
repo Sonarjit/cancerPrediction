@@ -31,9 +31,9 @@ class Ui_MainWindow(object):
         # inference history button
         self.inference_history = QtWidgets.QPushButton(parent=self.nav_widget)
         self.nav_widget_layout.addWidget(self.inference_history)
-        # model_metadata button
-        self.model_metadata = QtWidgets.QPushButton(parent=self.nav_widget)
-        self.nav_widget_layout.addWidget(self.model_metadata)
+        # # model_metadata button
+        # self.model_metadata = QtWidgets.QPushButton(parent=self.nav_widget)
+        # self.nav_widget_layout.addWidget(self.model_metadata)
         spacerItem = QtWidgets.QSpacerItem(352, 19, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.nav_widget_layout.addItem(spacerItem)
         self.verticalLayout.addWidget(self.nav_widget)
@@ -57,19 +57,20 @@ class Ui_MainWindow(object):
         self.single_inference.setCheckable(True)
         self.batch_inference.setCheckable(True)
         self.inference_history.setCheckable(True)
-        self.model_metadata.setCheckable(True)
+        # self.model_metadata.setCheckable(True)
 
         self.single_inference.setAutoExclusive(True)
         self.batch_inference.setAutoExclusive(True)
         self.inference_history.setAutoExclusive(True)
-        self.model_metadata.setAutoExclusive(True)
+        # self.model_metadata.setAutoExclusive(True)
 
         self.single_inference.setChecked(True)  # default active
 
         # give names so stylesheet rules apply
         self.nav_widget.setObjectName("nav_widget")
 
-        for btn in (self.single_inference, self.batch_inference, self.model_metadata):
+        # for btn in (self.single_inference, self.batch_inference, self.model_metadata):
+        for btn in (self.single_inference, self.batch_inference):
             btn.setCheckable(True)
             btn.setAutoExclusive(True)
         self.single_inference.setChecked(True)  # initial active
@@ -80,7 +81,7 @@ class Ui_MainWindow(object):
             "single_inference_btn": self.single_inference,
             "batch_inference_btn": self.batch_inference,
             "history_btn": self.inference_history,
-            "model_metadata_btn": self.model_metadata
+            # "model_metadata_btn": self.model_metadata
         }
 
         self.toggle_display = ToggleDisplay(**dict_to_pass)
@@ -91,6 +92,6 @@ class Ui_MainWindow(object):
         self.single_inference.setText(_translate("MainWindow", "Single inference"))
         self.batch_inference.setText(_translate("MainWindow", "Batch inference"))
         self.inference_history.setText(_translate("MainWindow", "Saved History"))
-        self.model_metadata.setText(_translate("MainWindow", "Model Metadata"))
+        # self.model_metadata.setText(_translate("MainWindow", "Model Metadata"))
 
 

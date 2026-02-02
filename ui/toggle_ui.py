@@ -18,13 +18,13 @@ class ToggleDisplay:
 
         self.history_button = kwargs.get("history_btn")
 
-        self.model_metadata = kwargs.get("model_metadata_btn")
+        # self.model_metadata = kwargs.get("model_metadata_btn")
 
         # connect buttons to view switcher
         self.single_inference.clicked.connect(lambda: self._switch_ut_view(0))
         self.batch_inference.clicked.connect(lambda: self._switch_ut_view(1))
         self.history_button.clicked.connect(lambda: self._switch_ut_view(2))
-        self.model_metadata.clicked.connect(lambda: self._switch_ut_view(3))
+        # self.model_metadata.clicked.connect(lambda: self._switch_ut_view(3))
         self._switch_ut_view(0)
 
     def _clear_main_display(self):
