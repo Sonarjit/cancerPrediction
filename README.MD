@@ -16,7 +16,7 @@
 * [Performance comparison](#performance-comparison)
 * [Getting started](#getting-started)
 * [Operating the software (UI)](#operating-the-software-ui)
-* [Demo] (#demo)
+* [Demo](#demo)
 * [Future plans](#future-plans)
 
 ---
