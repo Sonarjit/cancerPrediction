@@ -16,6 +16,7 @@
 * [Performance comparison](#performance-comparison)
 * [Getting started](#getting-started)
 * [Operating the software (UI)](#operating-the-software-ui)
+* [Demo] (#demo)
 * [Future plans](#future-plans)
 
 ---
@@ -193,6 +194,10 @@ python main.py
 ![Saved Results UI](docs/images/savedResults.png)
 
    * Browse previously saved runs and inspect full evidence + model output.
+
+## Demo
+
+![Video demo](docs/video/projectVideo.webm)
 
 
 ## Future plans

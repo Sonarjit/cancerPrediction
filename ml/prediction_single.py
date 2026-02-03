@@ -1,15 +1,21 @@
 
 import joblib
+import nltk
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from nltk.corpus import stopwords
 import re
 import time
 from typing import Any, Optional
+import nltk
 
 
-# loading stop words from nltk library
-STOP_WORDS = set(stopwords.words("english"))
+# Ensure stopwords are available
+try:
+    STOP_WORDS = set(stopwords.words("english"))
+except LookupError:
+    nltk.download("stopwords")
+    STOP_WORDS = set(stopwords.words("english"))
 
 
 def clean_text(text: str, stop_words: set[str]) -> str:
