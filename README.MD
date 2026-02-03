@@ -197,7 +197,8 @@ python main.py
 
 ## Demo
 
-![Video demo](docs/video/projectVideo.webm)
+[![Watch demo video](docs/images/result_singleInference.png)](https://youtu.be/RJhcJhM82H0)
+
 
 
 ## Future plans
