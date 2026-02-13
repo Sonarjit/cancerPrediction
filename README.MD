@@ -12,6 +12,7 @@ It also demonstrates practical API integration — the demo runs a low-latency F
 * [Features](#features)
 * [Data format](#data-format)
 * [Tech stack](#tech-stack)
+* [APIs integration](#apis-integration)
 * [Architecture & workflow](#architecture--workflow)
 * [Data processing & encoding](#data-processing--encoding)
 * [Model](#model)
