@@ -1,6 +1,8 @@
 # Cancer Mutation Gene Classifier
 
-**Short description.** A desktop application and ML pipeline that automates classification of genetic variations into clinically meaningful categories (1–9) from literature-derived evidence. The tool is intended to reduce the time a molecular pathologist spends interpreting mutation-level evidence by automating the final classification step using a supervised machine‑learning model.
+A desktop application and ML pipeline that automates classification of genetic variations into clinically meaningful categories (1–9) from literature-derived evidence. The tool is intended to reduce the time a molecular pathologist spends interpreting mutation-level evidence by automating the final classification step using a supervised machine-learning model.
+
+It also demonstrates practical API integration — the demo runs a low-latency FastAPI endpoint for single inference and a Flask endpoint for CSV batch processing, showing how the same ML pipeline can be consumed both interactively (GUI) and programmatically (HTTP), which makes the system easy to test, script, and migrate to a networked deployment.
 
 ---
 
@@ -60,6 +62,29 @@ Input dataset must contain the following columns (CSV or programmatic input):
 * ML: **scikit-learn**, **scipy**
 * GUI: **PyQt6**, **matplotlib**, **seaborn**
 * DB: **sqlite3** (embedded persistence for saved results)
+
+## APIs integration
+
+This project demonstrates an integration of two small local HTTP APIs alongside the desktop UI to show practical server–client integration with an ML pipeline.
+
+**Why APIs are included**
+Including both a lightweight REST API and a desktop client demonstrates how the ML pipeline can be consumed programmatically and from a UI. It also shows common integration patterns (single-record inference vs. CSV batch processing), background-threaded client calls, and how to run local server processes from a desktop application.
+
+**FastAPI — Single inference**
+* Purpose: single-instance / interactive predictions (fast path).
+* Default host/port: http://127.0.0.1:5001
+* Endpoint: POST /single_predict
+
+**Flask — Batch inference**
+* Purpose: batch predictions from CSV (multipart upload).
+* Default host/port: http://127.0.0.1:5000
+* Endpoint: POST /batch_predict
+
+**How the UI uses the APIs**
+* The PyQt6 UI can launch both servers locally.
+* Single prediction button uses a background QThread to POST JSON to the FastAPI /single_predict endpoint and update the UI on completion.
+* Batch inference uploads CSV via background QThread to the Flask /batch_predict endpoint; results are returned as JSON or a CSV file.
+* Default ports used in the demo: 5001 (FastAPI) and 5000 (Flask). These are configurable in main.py.
 
 ## Architecture & workflow
 

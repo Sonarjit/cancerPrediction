@@ -1,5 +1,24 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
-from ml.prediction_single import prediction
+import requests
+from PyQt6.QtCore import QThread, pyqtSignal
+# from ml.prediction_single import prediction
+
+class PredictThread(QThread):
+    finished_signal = pyqtSignal(object)  # emits parsed JSON result OR {'error': '...'}
+    def __init__(self, payload: dict, parent=None):
+        super().__init__(parent)
+        self.payload = payload
+        # FastAPI server runs on port 5001
+        self._url = "http://127.0.0.1:5001/single_predict"
+
+    def run(self):
+        try:
+            resp = requests.post(self._url, json=self.payload, timeout=30)
+            resp.raise_for_status()
+            # FastAPI returns JSON list-of-records; just pass it through
+            self.finished_signal.emit(resp.json())
+        except Exception as exc:
+            self.finished_signal.emit({"error": str(exc)})
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -77,8 +96,6 @@ class Ui_Form(object):
         self.label_4.setText(_translate("Form", "Text"))
         self.pushButton_4.setText(_translate("Form", "Predict"))
 
-    
-
 class SingleInferenceWidget(QtWidgets.QWidget, Ui_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -93,70 +110,92 @@ class SingleInferenceWidget(QtWidgets.QWidget, Ui_Form):
 
     def predict(self):
         
-        gene = self.lineEdit.text().strip()
-        variation = self.lineEdit_2.text().strip()
-        text = self.plainTextEdit.toPlainText().strip()
+        self.gene = self.lineEdit.text().strip()
+        self.variation = self.lineEdit_2.text().strip()
+        self.text = self.plainTextEdit.toPlainText().strip()
 
         # warning if any field is empty
-        if not gene or not variation or not text:
+        if not self.gene or not self.variation or not self.text:
             QtWidgets.QMessageBox.warning(self, "Input Error", "Please fill in all fields: Gene, Variation, and Text.")
             return
-
-        prediction_results = prediction(gene=[gene], variation=[variation], text=[text])
-        # lists you asked for
-        predicted_class = [r["pred_class"] for r in prediction_results]
-        class1_probs = [r["prob_class_1"] for r in prediction_results]
-        class2_probs = [r["prob_class_2"] for r in prediction_results]
-        class3_probs = [r["prob_class_3"] for r in prediction_results]
-        class4_probs = [r["prob_class_4"] for r in prediction_results]
-        class5_probs = [r["prob_class_5"] for r in prediction_results]
-        class6_probs = [r["prob_class_6"] for r in prediction_results]
-        class7_probs = [r["prob_class_7"] for r in prediction_results]
-        class8_probs = [r["prob_class_8"] for r in prediction_results]
-        class9_probs = [r["prob_class_9"] for r in prediction_results]
-
-        cls_predicted = predicted_class[0]
-        prob_class_1 = class1_probs[0]
-        prob_class_2 = class2_probs[0]
-        prob_class_3 = class3_probs[0]
-        prob_class_4 = class4_probs[0]
-        prob_class_5 = class5_probs[0]
-        prob_class_6 = class6_probs[0]
-        prob_class_7 = class7_probs[0]
-        prob_class_8 = class8_probs[0]
-        prob_class_9 = class9_probs[0]
-
-        dict_to_pass = {
-            "gene": gene,
-            "variation": variation,
-            "text": text,
-            "predicted_class": cls_predicted,
-            "class1_prob": prob_class_1,
-            "class2_prob": prob_class_2,
-            "class3_prob": prob_class_3,
-            "class4_prob": prob_class_4,
-            "class5_prob": prob_class_5,
-            "class6_prob": prob_class_6,
-            "class7_prob": prob_class_7,
-            "class8_prob": prob_class_8,
-            "class9_prob": prob_class_9,
+        
+        # Use dict-of-lists format so server can handle multiple rows easily
+        payload = {
+            "Gene": [self.gene],
+            "Variation": [self.variation],
+            "Text": [self.text]
         }
 
-        self.main_display = self.parent
-        self.main_display_layout = self.main_display.layout()
-        layout = self.main_display_layout
-        while layout.count():
-            item = layout.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.setParent(None)
-                w.deleteLater()
+        # disable the button while waiting
+        self.pushButton_4.setEnabled(False)
+
+        self._predict_thread = PredictThread(payload)
+        self._predict_thread.finished_signal.connect(self.on_prediction_result)
+        self._predict_thread.start()
         
-        from ui.result_single_ui import ResultSingleWidget
-        self.result_window = ResultSingleWidget(parent=self.main_display)    
-        self.result_window.populate_data(**dict_to_pass)
-        self.main_display_layout.addWidget(self.result_window)
-        
+    def on_prediction_result(self, result):
+        print("Received prediction result:", result)  # debug log
+        # Re-enable button
+        self.pushButton_4.setEnabled(True)
+
+        if isinstance(result, dict) and result.get("error"):
+            QtWidgets.QMessageBox.critical(self, "Prediction Error", f"Error: {result.get('error')}")
+            return
+
+        # result should be a list-of-records
+        try:
+            # Example: show predicted class of the first row in a label or message box
+            first = result[0] if isinstance(result, list) and len(result) > 0 else None
+            if first:
+                gene = self.gene
+                variation = self.variation
+                text = self.text
+                cls_predicted = first.get("pred_class")
+                prob_class_1 = first.get("prob_class_1")
+                prob_class_2 = first.get("prob_class_2")
+                prob_class_3 = first.get("prob_class_3")
+                prob_class_4 = first.get("prob_class_4")
+                prob_class_5 = first.get("prob_class_5")
+                prob_class_6 = first.get("prob_class_6")
+                prob_class_7 = first.get("prob_class_7")
+                prob_class_8 = first.get("prob_class_8")
+                prob_class_9 = first.get("prob_class_9")
+                
+
+                dict_to_pass = {
+                    "gene": gene,
+                    "variation": variation,
+                    "text": text,
+                    "predicted_class": cls_predicted,
+                    "class1_prob": prob_class_1,
+                    "class2_prob": prob_class_2,
+                    "class3_prob": prob_class_3,
+                    "class4_prob": prob_class_4,
+                    "class5_prob": prob_class_5,
+                    "class6_prob": prob_class_6,
+                    "class7_prob": prob_class_7,
+                    "class8_prob": prob_class_8,
+                    "class9_prob": prob_class_9,
+                }
+
+                self.main_display = self.parent
+                self.main_display_layout = self.main_display.layout()
+                layout = self.main_display_layout
+                while layout.count():
+                    item = layout.takeAt(0)
+                    w = item.widget()
+                    if w is not None:
+                        w.setParent(None)
+                        w.deleteLater()
+                
+                from ui.result_single_ui import ResultSingleWidget
+                self.result_window = ResultSingleWidget(parent=self.main_display)    
+                self.result_window.populate_data(**dict_to_pass)
+                self.main_display_layout.addWidget(self.result_window)
+            else:
+                QtWidgets.QMessageBox.information(self, "Prediction", "No prediction returned.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Prediction Parse Error", str(e))
 
     def apply_styles(self):
         self.setStyleSheet("""

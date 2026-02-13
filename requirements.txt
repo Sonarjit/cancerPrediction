@@ -8,3 +8,13 @@ scikit-learn
 imblearn
 mlxtend
 pyqt6
+joblib
+
+Flask
+requests
+
+fastapi
+uvicorn
+python-multipart
+
+
